@@ -9,8 +9,8 @@ import pandas as pd
 
 # 설정 클래스
 class Config:
-    OPENAI_MODEL = "gpt-3.5-turbo"
-    MAX_TOKENS = 4096
+    OPENAI_MODEL = "gpt-4o-mini"
+    MAX_TOKENS = 16384
     IMAGE_SIZE = "1024x1024"
     STATIC_DIR = "static/images"
     CACHE_DIR = "cache"
