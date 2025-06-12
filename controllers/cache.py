@@ -9,9 +9,9 @@ import pandas as pd
 
 # 설정 클래스
 class Config:
-    OPENAI_MODEL = "gpt-3.5-turbo"
-    MAX_TOKENS = 4096
-    IMAGE_SIZE = "1024x1024"
+    OPENAI_MODEL = "gpt-40-mini"
+    MAX_TOKENS = 16384
+    IMAGE_SIZE = "512x512"
     STATIC_DIR = "static/images"
     CACHE_DIR = "cache"
     USE_S3 = os.getenv('USE_S3', 'false').lower() == 'true'

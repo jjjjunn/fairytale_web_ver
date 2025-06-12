@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 # 현재 파일의 상위 상위 폴더인 'fairytale'을 경로에 추가
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-from controllers.story_controller import generate_fairy_tale, play_openai_voice, generate_image_from_fairy_tale, save_story_to_db, convert_bw_image
+from controllers.story_controller import generate_fairy_tale, generate_openai_voice, generate_image_from_fairy_tale, save_story_to_db, convert_bw_image, audio_to_base64
 import requests
 from utils import initialize_session_state, check_login
 import logging
@@ -94,8 +94,20 @@ def main():
     st.write("선택한 테마:", thema)
 
     # 목소리 선택
-    voice_choices = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"]
-    voice = st.selectbox("목소리를 선택해 주세요", voice_choices)
+    voice_choices = ["alloy", "echo", "fable", "onyx", "nova", "shimmer", "ash", "coral", "sage"]
+    # 음성 선택을 세션 상태로 관리
+    if "selected_voice" not in st.session_state:
+        st.session_state.selected_voice = "alloy"
+
+    voice = st.selectbox(
+        "목소리를 선택해 주세요", 
+        voice_choices,
+        index=voice_choices.index(st.session_state.selected_voice),
+        key="voice_selector"
+    )
+
+    # 선택된 음성을 세션 상태에 저장
+    st.session_state.selected_voice = voice
     st.write("선택한 목소리:", voice)
 
     # 동화 생성 버튼
@@ -109,39 +121,38 @@ def main():
 
     # 음성 재생 버튼
     if st.button("음성으로 듣기"):
-        logging.info("음성 재생 요청")
         if st.session_state.get("fairy_tale_text"):
-            audio_file = play_openai_voice(st.session_state.fairy_tale_text, voice=voice)
-            if audio_file:
-                st.audio(audio_file)
-                os.remove(audio_file)
+            with st.spinner(f"{voice} 목소리로 음성을 생성하는 중..."):
+                audio_data = generate_openai_voice(
+                        st.session_state.fairy_tale_text, 
+                        voice=voice,
+                        speed=speed
+                    )
+                    
+                if audio_data:
+                    st.success(f"{voice} 목소리로 생성 완료!")
+                    
+                    # Streamlit에서 바이너리 데이터 직접 재생
+                    st.audio(audio_data, format='audio/mp3')
+                    
+                    # Base64 인코딩된 데이터도 표시 (모바일 앱 개발 참고용)
+                    with st.expander("개발자용 - Base64 데이터"):
+                        base64_audio = audio_to_base64(audio_data)
+                        st.text_area("Base64 Audio Data (모바일 앱용)", 
+                                    value=base64_audio[:200] + "...", 
+                                    height=100)
+                else:
+                    st.error("음성 생성에 실패했습니다.")
         else:
             st.warning("먼저 동화를 생성하세요.")
 
     # 이미지 생성 버튼
     if st.button("동화 이미지 생성"):
-        logging.info("동화 이미지 생성 요청")
         if st.session_state.fairy_tale_text.strip():
             image_url = generate_image_from_fairy_tale(st.session_state.fairy_tale_text)
             if image_url:
                 st.session_state.image_url = image_url
                 st.success("이미지가 생성되었습니다!")
-
-                # 자동 저장
-                # try:
-                #     saved_story = save_story_to_db(
-                #         user_id=user_id,
-                #         theme=thema,
-                #         voice=voice,
-                #         content=st.session_state.fairy_tale_text,
-                #         voice_content="",  # 음성 저장 안 함
-                #         image=image_url,
-                #         bw_image=image_url
-                #     )
-                #     st.success(f"동화가 자동으로 저장되었습니다! (ID: {saved_story.id})")
-                # except Exception as e:
-                #     st.error(f"저장 중 오류가 발생했습니다: {e}")
-
             else:
                 st.warning("이미지 생성에 실패했습니다. 입력을 다시 확인해주세요.")
         else:

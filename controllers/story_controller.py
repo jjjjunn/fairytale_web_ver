@@ -23,6 +23,7 @@ from functools import lru_cache
 from typing import Optional, List
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from frontend.utils import ImageSharingUtils
+import base64
 
 # 현재 파일의 상위 폴더인 'fairytale'을 경로에 추가
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
@@ -52,13 +53,6 @@ client = OpenAI(api_key=openai_api_key)
 cache_manager = CacheManager()
 
 
-# You are a fairy tale writer.
-
-# Please write a long and rich fairy tale in Korean about '{thema}', with the main character named '{name}'.  
-# The main character can be various animals.  
-# Include detailed descriptions of the characters, background, and events,  
-# and write in a warm and gentle tone as if a mother is reading the story to her child.
-
 # 동화 생성 함수 (캐싱 적용)
 @lru_cache(maxsize=50)
 def generate_fairy_tale(name: str, thema: str) -> Optional[str]:
@@ -84,82 +78,75 @@ def generate_fairy_tale(name: str, thema: str) -> Optional[str]:
     )
     try:
         completion = client.chat.completions.create(
-            model=Config.OPENAI_MODEL,
+            # model=Config.OPENAI_MODEL,
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=Config.MAX_TOKENS,
+            # max_tokens=Config.MAX_TOKENS,
+            max_tokens=16384,
             temperature=0.5
         )
-        story_content = completion.choices[0].message.content
+        fairy_tale_text = completion.choices[0].message.content
 
         # 스토리를 캐시에 저장
         temp_story_file = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt', encoding='utf-8')
-        temp_story_file.write(story_content)
+        temp_story_file.write(fairy_tale_text)
         temp_story_file.close()
         
         cache_manager.cache_file(content_key, "story", temp_story_file.name)
         os.unlink(temp_story_file.name)  # 임시 파일 삭제
         
-        return story_content
+        return fairy_tale_text
 
     except Exception as e:
         return f"동화 생성 중 오류 발생: {e}"
 
 
-# 음성 재생 함수 (캐싱 적용)
-def play_openai_voice(text: str, voice: str = "alloy", speed: float = 1) -> Optional[str]:
-
-    # 캐시 확인
-    voice_key = f"{text[:100]}_{voice}_{speed}"  # 텍스트 일부만 키로 사용
-    cached_audio = cache_manager.get_cached_file(voice_key, "audio")
-
-    if cached_audio:
-        logging.info("캐시된 음성 파일을 사용합니다.")
-        return cached_audio
-
-    # 1. TTS 음성 생성
+# OpenAI TTS를 사용하여 음성 데이터 생성 (파일 저장 없음)
+def generate_openai_voice(text, voice="alloy", speed=1.0):
     try:
-        response = client.audio.speech.create(
+        # TTS 음성 생성
+        response = openai.audio.speech.create(
             model="tts-1",
             voice=voice,
             input=text,
             speed=speed
         )
-        # 2. 임시 파일에 저장
-
-        if hasattr(response, 'content') and response.content:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_file:
-                tmp_file.write(response.content)
-                tmp_path = tmp_file.name
-            
-            # 캐시에 저장
-            cached_path = cache_manager.cache_file(voice_key, "audio", tmp_path)
-            return cached_path
-        else:
-            st.error("TTS 응답이 없습니다.")
-            return None
+        
+        # 바이너리 데이터 직접 반환
+        return response.content
+        
     except Exception as e:
-        logging.error(f"음성 생성 중 오류 발생: {e}")
+        print(f"TTS 생성 오류: {e}")
         return None
 
-# 이미지 생성용 프롬프트 설정
-def generate_image_prompt_from_story(story_text: str) -> Optional[str]:
+def audio_to_base64(audio_data):
+    """
+    오디오 바이너리 데이터를 Base64로 인코딩
+    모바일 앱에서 사용하기 위함
+    """
+    if audio_data:
+        return base64.b64encode(audio_data).decode('utf-8')
+    return None
+
+# 프롬프트 생성 함수 (staility_sdxl는 영어만 처리 가능)
+def generate_image_prompt_from_story(fairy_tale_text: str) -> Optional[str]:
     """
     동화 내용을 기반으로 이미지 생성용 영어 프롬프트 생성
     """
     try:
         system_prompt = (
-            "You are a prompt generator for DALL·E 3. "
-            f"From the given {story_text}, choose one vivid, heartwarming scene. "
+            "You are a prompt generator for staility_sdxl. "
+            f"From the given {fairy_tale_text}, choose one vivid, heartwarming scene. "
             "Describe it in English in a single short sentence suitable for generating a simple, child-friendly fairy tale illustration style. "
             "Use a soft, cute, minimal detail. "
             "No text, no words, no letters, no signs, no numbers."
         )
 
         completion = client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"다음은 동화야:\n\n{story_text}\n\n이 동화에 어울리는 그림을 그릴 수 있도록 프롬프트를 영어로 짧게 써줘."}
+                {"role": "user", "content": f"다음은 동화야:\n\n{fairy_tale_text}\n\n이 동화에 어울리는 그림을 그릴 수 있도록 프롬프트를 영어로 짧게 써줘."}
             ],
             temperature=0.5,
             max_tokens=150
@@ -168,46 +155,179 @@ def generate_image_prompt_from_story(story_text: str) -> Optional[str]:
         return completion.choices[0].message.content.strip()
 
     except Exception as e:
-        logging.error(f"이미지 프롬프트 생성 오류: {e}")
+        st.error(f"이미지 프롬프트 생성 오류: {e}")
         return None
 
+
+
 # 이미지 생성 함수 (캐싱 적용)
-def generate_image_from_prompt(image_prompt: str, image_key: str) -> Optional[str]:
+# def generate_image_from_prompt(image_prompt: str, image_key: str) -> Optional[str]:
+#     cached_image = cache_manager.get_cached_file(image_key, "image")
+    
+#     if cached_image:
+#         logging.info("캐시된 이미지를 사용합니다.")
+#         return cached_image
+
+#     try:
+#         response = client.images.generate(
+#             model="dall-e-3",
+#             prompt=image_prompt,
+#             size=Config.IMAGE_SIZE,
+#             quality="standard",
+#             n=1
+#         )
+        
+#         if hasattr(response, "data") and response.data and len(response.data) > 0:
+#             image_url = response.data[0].url
+            
+#             image_data = requests.get(image_url).content
+#             with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_file:
+#                 tmp_file.write(image_data)
+#                 tmp_path = tmp_file.name
+            
+#             cached_path = cache_manager.cache_file(image_key, "image", tmp_path)
+#             os.unlink(tmp_path)
+            
+#             return cached_path
+
+#         else:
+#             logging.error("이미지 생성 실패: 응답이 비어 있거나 형식이 잘못됨.")
+#             return None
+
+#     except Exception as e:
+#         logging.error(f"이미지 생성 중 오류 발생: {e}")
+#         return None
+
+# 중복되지 않는 파일명 생성 함수
+def get_available_filename(base_name: str, extension: str = ".png", folder: str = ".") -> str:
+    """
+    중복되지 않는 파일명을 자동으로 생성
+    예: fairy_tale_image.png, fairy_tale_image_1.png, ...
+    """
+    counter = 0
+    while True:
+        filename = f"{base_name}{f'_{counter}' if counter > 0 else ''}{extension}"
+        filepath = os.path.join(folder, filename)
+        if not os.path.exists(filepath):
+            return filepath
+        counter += 1
+
+# 이미지 생성 함수 (캐싱 적용)
+def generate_image_from_prompt(fairy_tale_text: str, image_key: str) -> Optional[str]:
     cached_image = cache_manager.get_cached_file(image_key, "image")
     
     if cached_image:
         logging.info("캐시된 이미지를 사용합니다.")
         return cached_image
-
+    
     try:
-        response = client.images.generate(
-            model="dall-e-3",
-            prompt=image_prompt,
-            size=Config.IMAGE_SIZE,
-            quality="standard",
-            n=1
-        )
+        endpoint = "https://api.stability.ai/v2beta/stable-image/generate/core"
         
-        if hasattr(response, "data") and response.data and len(response.data) > 0:
-            image_url = response.data[0].url
-            
-            image_data = requests.get(image_url).content
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_file:
-                tmp_file.write(image_data)
-                tmp_path = tmp_file.name
-            
-            cached_path = cache_manager.cache_file(image_key, "image", tmp_path)
-            os.unlink(tmp_path)
-            
-            return cached_path
+        
+        # 동화 프롬프트 처리
+        base_prompt = generate_image_prompt_from_story(fairy_tale_text)
+        if not base_prompt:
+            st.error("이미지 프롬프트 생성에 실패했습니다.")
+            return None
 
+        prompt = (
+            "no text in the image "
+            "Minimul detail "
+            f"Please create a single, simple illustration that matches the content about {base_prompt}, in a child-friendly style. "
+        )
+
+        headers = {
+            "Authorization": f"Bearer {os.getenv('STABILITY_API_KEY')}",
+            # "Authorization": f"Bearer {st.secrets['STABILITY_API_KEY']['STABILITY_API_KEY']}",
+            "Accept": "image/*",
+        }
+
+        # multipart/form-data 형태로 데이터 전송
+        files = {
+            "prompt": (None, prompt),
+            "model": (None, "stable-diffusion-xl-512-v1-0"),
+            "output_format": (None, "png"),
+            "height": (None, "512"),
+            "width": (None, "512"),
+            "seed": (None, "1234")
+        }
+
+        response = requests.post(endpoint, headers=headers, files=files)
+
+        if response.status_code == 200:
+            save_path = get_available_filename("fairy_tale_image", ".png", folder=".")
+            with open(save_path, "wb") as f:
+                f.write(response.content)
+            print(f"이미지 저장 완료: {save_path}")
+            return save_path
         else:
-            logging.error("이미지 생성 실패: 응답이 비어 있거나 형식이 잘못됨.")
+            print("이미지 생성 실패:", response.status_code)
+            print("응답 내용:", response.text)
             return None
 
     except Exception as e:
-        logging.error(f"이미지 생성 중 오류 발생: {e}")
+        print(f"이미지 생성 중 오류 발생:\n{e}")
         return None
+
+
+# 흑백 이미지 변환(캐싱 적용, staility_sdxl 이미지 용)
+def convert_bw_image(image_path: str) -> Optional[str]:
+    if not image_path or not os.path.exists(image_path):
+        return None
+    
+    # 캐시 확인
+    bw_key = f"bw_{os.path.basename(image_path)}"
+    cached_bw = cache_manager.get_cached_file(bw_key, "image")
+    
+    if cached_bw:
+        logging.info("캐시된 흑백 이미지를 사용합니다.")
+        return cached_bw
+
+    # URL인지 로컬 파일인지 판단
+    if image_path.startswith(('http://', 'https://')):
+        # URL에서 이미지 다운로드
+        response = requests.get(image_path)
+        image = Image.open(BytesIO(response.content)).convert("RGB")
+    else:
+        # 로컬 파일에서 이미지 로드
+        image = Image.open(image_path).convert("RGB")
+
+    try:
+        # Numpy 배열로 변환
+        np_image = np.array(image)
+
+        # 흑백 변환
+        gray = cv2.cvtColor(np_image, cv2.COLOR_RGB2GRAY)
+
+        # 가우시안 블러로 노이즈 제거
+        blurred = cv2.GaussianBlur(gray, (3, 3), 0)
+
+        # 캐니 엣지 디텍션 (더 부드러운 선)
+        edges = cv2.Canny(blurred, 50, 150)
+        
+        # 선 두께 조절
+        kernel = np.ones((2,2), np.uint8)
+        dilated_edges = cv2.dilate(edges, kernel, iterations=1)
+        
+        # 흰 배경에 검은 선
+        line_drawing = 255 - dilated_edges
+        
+        # 이미지 저장
+        pil_image = Image.fromarray(line_drawing)
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_file:
+            pil_image.save(tmp_file.name)
+            tmp_path = tmp_file.name
+        
+        cached_path = cache_manager.cache_file(bw_key, "image", tmp_path)
+        os.unlink(tmp_path)  # 임시 파일 삭제
+        
+        return cached_path
+
+    except Exception as e:
+        logging.error(f"흑백 변환 오류: {e}")
+        return None
+
 
 # 통합 함수: 동화 텍스트로부터 이미지 생성
 def generate_image_from_fairy_tale(fairy_tale_text: str) -> Optional[str]:
@@ -244,59 +364,6 @@ def generate_image_from_fairy_tale(fairy_tale_text: str) -> Optional[str]:
         logging.error(f"동화 이미지 생성 전체 과정 중 오류: {e}")
         return None
 
-
-# 흑백 이미지 변환(캐싱 적용)
-def convert_bw_image(image_path: str) -> Optional[str]:
-    if not image_path or not os.path.exists(image_path):
-        return None
-    
-    # 캐시 확인
-    bw_key = f"bw_{os.path.basename(image_path)}"
-    cached_bw = cache_manager.get_cached_file(bw_key, "image")
-    
-    if cached_bw:
-        logging.info("캐시된 흑백 이미지를 사용합니다.")
-        return cached_bw
-
-    try:
-        image = Image.open(image_path).convert("RGB")
-
-        # Numpy 배열로 변환
-        np_image = np.array(image)
-
-        # 흑백 변환
-        gray = cv2.cvtColor(np_image, cv2.COLOR_RGB2GRAY)
-
-        # 가우시안 블러로 노이즈 제거
-        blurred = cv2.GaussianBlur(gray, (3, 3), 0)
-
-        # 캐니 엣지 디텍션 (더 부드러운 선)
-        edges = cv2.Canny(blurred, 50, 150)
-        
-        # 선 두께 조절
-        kernel = np.ones((2,2), np.uint8)
-        dilated_edges = cv2.dilate(edges, kernel, iterations=1)
-        
-        # 흰 배경에 검은 선
-        line_drawing = 255 - dilated_edges
-        
-        # 이미지 저장
-        # cv2.imwrite(save_path, line_drawing)
-        # return save_path
-        pil_image = Image.fromarray(line_drawing)
-
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_file:
-            pil_image.save(tmp_file.name)
-            tmp_path = tmp_file.name
-        
-        cached_path = cache_manager.cache_file(bw_key, "image", tmp_path)
-        os.unlink(tmp_path)  # 임시 파일 삭제
-        
-        return cached_path
-
-    except Exception as e:
-        logging.error(f"흑백 변환 오류: {e}")
-        return None
 
 # 사용자 정보 받아오기
 def get_username_by_id(user_id: int, db: Session) -> str:
@@ -380,7 +447,7 @@ def generate_and_save_images_parallel(
         with ThreadPoolExecutor(max_workers=3) as executor:
             # 비동기 작업 제출
             future_color_image = executor.submit(generate_image_from_fairy_tale, fairy_tale_text)
-            future_voice = executor.submit(play_openai_voice, voice_content, voice)
+            future_voice = executor.submit(generate_openai_voice, voice_content, voice)
             
             # 결과 수집
             results = {}

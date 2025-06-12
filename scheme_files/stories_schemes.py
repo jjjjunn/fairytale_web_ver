@@ -32,11 +32,12 @@ class SaveStoryRequest(BaseModel):
     class Config:
         orm_mode = True
 
-
-
 # 음성 파일 생성 클래스
 class TTSRequest(BaseModel):
     text: str
+    voice: str
+    speed: float = 1.0  # 기본 속도는 1.0
+
 
 # 이미지 생성 클래스
 class ImageRequest(BaseModel):

@@ -1,10 +1,12 @@
-from fastapi import APIRouter, HTTPException
-from controllers.story_controller import generate_fairy_tale, generate_image_from_fairy_tale, play_openai_voice, save_story_to_db, get_user_images
+from fastapi import APIRouter, HTTPException, Response
+from controllers.story_controller import generate_fairy_tale, generate_image_from_fairy_tale, generate_openai_voice, save_story_to_db, get_user_images
 from controllers.music_controller import search_tracks_by_tag
 from controllers.video_controller import search_videos
 from scheme_files.stories_schemes import StoryRequest, TTSRequest, ImageRequest, MusicRequest, VideoRequest, SaveStoryRequest
 from scheme_files.users_schemes import UserIdRequest
 from datetime import datetime
+import base64
+
 
 # FastAPI 애플리케이션 생성
 router = APIRouter()
@@ -26,13 +28,44 @@ def generate_story(req: StoryRequest):
     result = generate_fairy_tale(req.name, req.theme)
     return {"story": result}
 
-
-# 음성 파일 생성 라우터
+# 음성 파일 생성 라우터 (바이너리 반환)
 @router.post("/generate/voice")
 def generate_voice(req: TTSRequest):
-    path = play_openai_voice(generate_fairy_tale(req.text))
-    return {"audio_path": path}
+    try:
+        audio_data = generate_openai_voice(req.text, req.voice, req.speed)
+        if audio_data is None:
+            raise HTTPException(status_code=500, detail="음성 파일 생성 실패")
+        
+        # Base64로 인코딩하여 JSON으로 반환 (모바일 앱에서 쉽게 처리)
+        audio_base64 = base64.b64encode(audio_data).decode('utf-8')
+        
+        return {
+            "audio_base64": audio_base64,
+            "voice": req.voice,
+            "speed": req.speed,
+            "format": "mp3"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"음성 생성 실패: {str(e)}")
 
+# 음성 파일 직접 다운로드 (바이너리 반환)
+@router.post("/generate/voice/binary")
+def generate_voice_binary(req: TTSRequest):
+    try:
+        audio_data = generate_openai_voice(req.text, req.voice, req.speed)
+        if audio_data is None:
+            raise HTTPException(status_code=500, detail="음성 파일 생성 실패")
+        
+        # 바이너리 데이터 직접 반환
+        return Response(
+            content=audio_data,
+            media_type="audio/mpeg",
+            headers={
+                "Content-Disposition": f"attachment; filename=voice_{req.voice}.mp3"
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"음성 생성 실패: {str(e)}")
 
 # 이미지 생성 라우터
 @router.post("/generate/image")
