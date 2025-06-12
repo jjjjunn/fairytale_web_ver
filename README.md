@@ -2,6 +2,10 @@
 
 ## 주요 사용 stacks:
 Streamlit, FastAPI, OpenAI API, Google API, Jamendo API, OpenCV 사용
+> v1.2 변경 사항 (25.06.12)
+1) Dall-e-3 에서 Stability AI로 변경
+2) gpt-3.5-turbo 에서 gpt-4o-mini로 변경 (max_tokens 늘림: 16384)
+3) TTS에 목소리 3개 추가 + 음성 재생 방법 변경 (임시 파일 저장 하지 않고 재생)
 
 ## 주요 기능:
 1. 회원 가입 후 아이를 등록한 뒤 동화 생성 가능
