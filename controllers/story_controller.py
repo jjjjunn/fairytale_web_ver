@@ -156,7 +156,7 @@ def generate_image_prompt_from_story(story_text: str) -> Optional[str]:
         )
 
         completion = client.chat.completions.create(
-            model="gpt-4",
+            model=Config.OPENAI_MODEL,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": f"다음은 동화야:\n\n{story_text}\n\n이 동화에 어울리는 그림을 그릴 수 있도록 프롬프트를 영어로 짧게 써줘."}
