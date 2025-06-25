@@ -11,6 +11,7 @@
 ![OpenAI](https://img.shields.io/badge/OpenAI-API-4B0082?logo=openai)
 ![Jamendo](https://img.shields.io/badge/Jamendo-API-ff69b4?logo=musicbrainz)
 ![OpenCV](https://img.shields.io/badge/Image-OpenCV-5C3EE8?logo=opencv)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=PostgreSQL&logoColor=white)
 
 ---
 
