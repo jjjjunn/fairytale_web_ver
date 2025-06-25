@@ -1,25 +1,63 @@
-# AI가 생성해주는 동화 생성봇
+# 📖 AI 동화 생성봇
 
-## 주요 사용 stacks:
-Streamlit, FastAPI, OpenAI API, Google API, Jamendo API, OpenCV 사용
-> v1.2 변경 사항 (25.06.12)
-1) Dall-e-3 에서 Stability AI로 변경
-2) gpt-3.5-turbo 에서 gpt-4o-mini로 변경 (max_tokens 늘림: 16384)
-3) TTS에 목소리 3개 추가 + 음성 재생 방법 변경 (임시 파일 저장 하지 않고 재생)
+아이를 위한 맞춤형 동화를 생성해주는 AI 기반 웹 애플리케이션입니다.  
+**동화 생성, TTS 음성 읽기, 이미지 변환, 자장가 추천, 유튜브 영상 검색 등** 다양한 기능을 제공합니다.
 
-## 주요 기능:
-1. 회원 가입 후 아이를 등록한 뒤 동화 생성 가능
-2. 동화 생성 시, 테마를 선택하면 그에 맞는 동화가 생성됨.
-3. OpenAI TTS를 사용하여 목소리를 선택하면 생성된 동화를 해당 목소리로 읽어줌.
-4. 속도 조절 가능
-5. 생성된 동화 내용을 바탕으로 이미지 생성
-6. 생성된 동화 이미지를 흑백으로 변환하여 컬러링북 스타일로 변환
-7. 갤러리에서 회원별로 생성한 이미지, 스토리 확인 가능하며 이미지 다운로드 및 공유 가능
-8. 자장가 찾기 페이지에서는 테마를 선택하면 Jamendo API 를 이용하여 무료 자장가 음원을 5개씩 찾아줌
-9. 유튜브 영상 찾기 페이지에서는 테마를 선택하면 관련된 유튜브 영상 목록이 출력됨
+<br>
 
-## 부가 기능
-1. 회원 가입, 아이디 찾기, 임시 비밀번호 발급 (비밀번호 잊었을 경우), 비밀번호 변경, 회원 탈퇴 기능 제공
-2. 사용자 관련 각 활동 시 각 활동에 대한 이메일 발송 기능
-3. 아이 추가 시 생년월일을 입력 받아 출생(예정)일 출력
-4. 아이 등록(추가), 아이 삭제 기능 제공
+![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python)
+![Streamlit](https://img.shields.io/badge/Frontend-Streamlit-red?logo=streamlit)
+![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi)
+![OpenAI](https://img.shields.io/badge/OpenAI-API-4B0082?logo=openai)
+![Jamendo](https://img.shields.io/badge/Jamendo-API-ff69b4?logo=musicbrainz)
+![OpenCV](https://img.shields.io/badge/Image-OpenCV-5C3EE8?logo=opencv)
+
+---
+
+## 🚀 주요 기능
+
+| 기능 구분 | 상세 내용 |
+|----------|-----------|
+| 👶 **회원 & 아이 관리** | - 회원가입/로그인/탈퇴<br>- 아이 등록 및 생년월일 기반 출생일 계산 |
+| 📘 **동화 생성** | - 테마를 선택하면 AI가 동화 생성<br>- GPT-4o-mini 사용 (max_tokens 16384) |
+| 🔊 **TTS 음성 읽기** | - OpenAI TTS 사용<br>- 다양한 목소리 선택 (3종 이상)<br>- 재생 속도 조절 기능 |
+| 🎨 **이미지 생성 & 변환** | - Stability AI 기반 이미지 생성<br>- 흑백 변환을 통한 컬러링북 스타일 제공 |
+| 🖼 **갤러리** | - 사용자별 이미지 및 동화 확인<br>- 다운로드 및 공유 가능 |
+| 🎵 **자장가 찾기** | - 테마별 무료 자장가 음원 추천 (Jamendo API 사용) |
+| 📺 **유튜브 영상 추천** | - 테마 관련 유튜브 영상 5개 자동 검색 및 제공 |
+
+---
+
+## 🔧 사용 기술 스택
+
+| 영역 | 기술 스택 |
+|------|------------|
+| **Frontend** | Streamlit |
+| **Backend** | FastAPI |
+| **AI 모델** | OpenAI GPT-4o-mini, TTS API |
+| **이미지 생성** | Stability AI (DALL·E 3 → 교체됨) |
+| **음악 API** | Jamendo API |
+| **영상 추천** | Google YouTube API |
+| **이미지 처리** | OpenCV |
+| **기타 기능** | 이메일 발송, 임시 비밀번호, 사용자별 활동 로그 |
+
+---
+
+## 🆕 v1.2 변경사항 (2025.06.12)
+
+- 🎨 **이미지 생성 모델 변경:** DALL·E → Stability AI
+- 🧠 **모델 교체:** gpt-3.5-turbo → gpt-4o-mini (max_tokens: 16384)
+- 🗣 **TTS 업데이트:** 목소리 3종 추가, 임시 파일 없이 실시간 음성 재생 지원
+
+---
+
+## 📁 프로젝트 구조 예시
+
+```bash
+📦storybook-ai
+├── frontend/           # Streamlit 앱
+├── backend/            # FastAPI 서버
+├── api/                # 외부 API 연동 (OpenAI, Jamendo 등)
+├── models/             # 데이터 모델
+├── assets/             # 이미지 및 오디오
+└── README.md           # 프로젝트 설명
