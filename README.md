@@ -54,10 +54,14 @@
 ## 📁 프로젝트 구조 예시
 
 ```bash
-📦storybook-ai
+📦fairytale_web_ver
+├── controllers/        # 앱 관련 주요 기능 구현
+├── emails/             # 회원 활동 관련 email 발송 기능 구현
 ├── frontend/           # Streamlit 앱
-├── backend/            # FastAPI 서버
-├── api/                # 외부 API 연동 (OpenAI, Jamendo 등)
-├── models/             # 데이터 모델
-├── assets/             # 이미지 및 오디오
+├── img/                # 프론트엔드에 사용되는 이미지
+├── models_dir/         # 데이터베이스 관련
+├── scheme_files/       # 아이, 컨텐츠, 사용자 관련 클래스
+├── ai_server.py        # ai 서버 (FastAPI)
+├── main.py             # 앱의 진입점
+├── requirements.txt    # 사용된 모듈, 라이브러리 버전 관리용
 └── README.md           # 프로젝트 설명
