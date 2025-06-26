@@ -49,6 +49,12 @@
 
 ---
 
+## 프로젝트 흐름
+![flow](assets/project_flow.png)
+
+
+---
+
 ## ERD
 ![ERD](assets/ERD.png)
 
