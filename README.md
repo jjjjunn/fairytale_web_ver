@@ -35,6 +35,7 @@
 |------|------------|
 | **Frontend** | Streamlit |
 | **Backend** | FastAPI |
+| **Database** | PostgreSQL |
 | **AI 모델** | OpenAI GPT-4o-mini, TTS API |
 | **이미지 생성** | Stability AI (DALL·E 3 → 교체됨) |
 | **음악 API** | Jamendo API |
