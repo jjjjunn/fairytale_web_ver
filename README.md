@@ -75,7 +75,7 @@
 |-------|-------|-----------|------|
 | **User**	| 회원 정보 저장	| username, email, role_id, created_at	| stories, articles, babies, likes, role |
 | **Role**	| 사용자 역할(권한) 구분	| role_name	| users (1:N) |
-| **Baby**	| 아이(또는 태아) 정보	| baby_name, baby_gender, baby_bday	user (N:1) |
+| **Baby**	| 아이(또는 태아) 정보	| baby_name, baby_gender, baby_bday	| user (N:1) |
 | **Story**	| AI가 생성한 동화 데이터	| theme, voice, content, image, voice_content	| user (N:1) |
 | **Article**	| 사용자 게시글 (갤러리 등) |	image, created_at	| user (N:1), likes (1:N) |
 | **Like**	| 좋아요 기록	| user_id, article_id	| user, article (각각 N:1) |
