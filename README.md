@@ -118,10 +118,16 @@
 
 ---
 
-## 📝 개발 기록 (블로그 제작기)
+## 📝 상세 설명 (블로그)
 | 주제 | 링크 |
 |------|------|
 | 🔧 프로젝트 개요 | [바로가기](https://puppy-foot-it.tistory.com/909) |
+| 📁 controller 디렉터리 설명 | [바로가기](https://puppy-foot-it.tistory.com/912) |
+| 📁 email 디렉터리 설명 | [바로가기](https://puppy-foot-it.tistory.com/913) |
+| 📁 frontend 디렉터리 설명 | [바로가기](https://puppy-foot-it.tistory.com/914) |
+| 📁 models_dir 디렉터리 설명 | [바로가기](https://puppy-foot-it.tistory.com/915) |
+| 📁 scheme_files 디렉터리 설명 | [바로가기](https://puppy-foot-it.tistory.com/916) |
+| 📄 main, ai_server, 기타 설명 | [바로가기](https://puppy-foot-it.tistory.com/917) |
 
 
 ---
