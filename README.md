@@ -76,6 +76,8 @@
 ├── controllers/        # 앱 관련 주요 기능 구현
 ├── emails/             # 회원 활동 관련 email 발송 기능 구현
 ├── frontend/           # Streamlit 앱
+    ├── pages/          # Streamlit 페이지들
+    ├── home.py         # Streamlit 메인 페이지
 ├── img/                # 프론트엔드에 사용되는 이미지
 ├── models_dir/         # 데이터베이스 관련
 ├── scheme_files/       # 아이, 컨텐츠, 사용자 관련 클래스
